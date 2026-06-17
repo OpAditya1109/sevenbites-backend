@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const http = require('http');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -45,11 +46,23 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 SevenBites API running on http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
   console.log(`🌱 Seed DB: npm run seed`);
+
+  // Keep Render free tier alive — ping every 14 mins
+  if (process.env.NODE_ENV !== 'development') {
+    setInterval(() => {
+      http.get(`http://localhost:${PORT}/health`, (res) => {
+        console.log(`♻️  Keep-alive ping: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.error('Keep-alive error:', err.message);
+      });
+    }, 14 * 60 * 1000);
+    console.log('⏰ Keep-alive scheduler started (14 min interval)');
+  }
 });
 
 module.exports = app;
